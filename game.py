@@ -249,7 +249,87 @@ class QuizGame:
             q_body_rect = pygame.Rect(420, 85, 420, 130)
             draw_brutal_box(self.screen, q_body_rect, COLOR_WHITE)
             
+                       # Text wrapping logic for the question
             words = current_q["q"].split(' ')
             lines = []
             current_line = ""
             for word in words:
+                test_line = current_line + word + " "
+                if FONT_BODY.size(test_line)[0] < 380:
+                    current_line = test_line
+                else:
+                    lines.append(current_line)
+                    current_line = word + " "
+            lines.append(current_line)
+            
+            for i, line in enumerate(lines):
+                q_surf = FONT_BODY.render(line, True, COLOR_BLACK)
+                self.screen.blit(q_surf, (440, 105 + (i * 30)))
+
+            # Answer Choices
+            for idx, option in enumerate(current_q["options"]):
+                opt_rect = pygame.Rect(450, 250 + (idx * 75), 400, 55)
+                if not self.answer_submitted:
+                    bg_col = COLOR_PINK if self.selected_option == option else COLOR_WHITE
+                else:
+                    if option == current_q["correct"]:
+                        bg_col = COLOR_NEON_YELLOW
+                    elif self.selected_option == option:
+                        bg_col = COLOR_PINK
+                    else:
+                        bg_col = COLOR_WHITE
+                        
+                draw_brutal_button(self.screen, opt_rect, bg_col, option, opt_rect.collidepoint(mouse_pos) and not self.answer_submitted)
+                
+                prefix_rect = pygame.Rect(420, 250 + (idx * 75), 35, 55)
+                draw_brutal_box(self.screen, prefix_rect, COLOR_BLACK)
+                p_text = FONT_BODY.render(chr(65 + idx), True, COLOR_WHITE)
+                self.screen.blit(p_text, p_text.get_rect(center=prefix_rect.center))
+
+            # Actions Panel
+            action_rect = pygame.Rect(450, 560, 400, 55)
+            if not self.answer_submitted:
+                btn_label = "SUBMIT ANSWER"
+                can_press = self.selected_option is not None
+            else:
+                btn_label = "NEXT CHALLENGE"
+                can_press = True
+            draw_brutal_button(self.screen, action_rect, COLOR_PURPLE if can_press else COLOR_LIGHT_GREY, btn_label, action_rect.collidepoint(mouse_pos) and can_press)
+
+            # Scoreboard / Timer UI
+            score_title_rect = pygame.Rect(860, 20, 120, 40)
+            draw_brutal_box(self.screen, score_title_rect, COLOR_PINK)
+            st_txt = FONT_SMALL.render("SCORE", True, COLOR_BLACK)
+            self.screen.blit(st_txt, st_txt.get_rect(center=score_title_rect.center))
+            
+            score_val_rect = pygame.Rect(860, 60, 120, 90)
+            draw_brutal_box(self.screen, score_val_rect, COLOR_WHITE)
+            sv_txt = FONT_TITLE.render(f"{self.score:02d}", True, COLOR_BLACK)
+            self.screen.blit(sv_txt, sv_txt.get_rect(center=score_val_rect.center))
+
+            timer_title_rect = pygame.Rect(860, 180, 120, 40)
+            draw_brutal_box(self.screen, timer_title_rect, COLOR_PURPLE)
+            tt_txt = FONT_SMALL.render("TIMER", True, COLOR_WHITE)
+            self.screen.blit(tt_txt, tt_txt.get_rect(center=timer_title_rect.center))
+            
+            timer_val_rect = pygame.Rect(860, 220, 120, 90)
+            draw_brutal_box(self.screen, timer_val_rect, COLOR_WHITE)
+            tv_txt = FONT_TITLE.render(f"{self.timer_seconds:02d}", True, COLOR_BLACK)
+            self.screen.blit(tv_txt, tv_txt.get_rect(center=timer_val_rect.center))
+
+        elif self.state == "VICTORY_SCREEN":
+            draw_brutal_box(self.screen, pygame.Rect(200, 100, 600, 300), COLOR_NEON_YELLOW)
+            v_text = FONT_TITLE.render("QUIZ COMPLETED!", True, COLOR_BLACK)
+            self.screen.blit(v_text, v_text.get_rect(center=(500, 180)))
+            
+            final_text = FONT_TITLE.render(f"FINAL SCORE: {self.score} / 30", True, COLOR_PURPLE)
+            self.screen.blit(final_text, final_text.get_rect(center=(500, 280)))
+            
+            again_rect = pygame.Rect(350, 450, 300, 70)
+            draw_brutal_button(self.screen, again_rect, COLOR_PINK, "MAIN MENU", again_rect.collidepoint(mouse_pos))
+
+        pygame.display.flip()
+
+if __name__ == "__main__":
+    game = QuizGame()
+    game.run()
