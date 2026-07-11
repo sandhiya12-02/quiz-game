@@ -205,3 +205,12 @@ class QuizGame:
             draw_brutal_box(self.screen, pygame.Rect(860, 20, 120, 40), COLOR_PINK)
             self.screen.blit(FONT_SMALL.render("SCORE", True, COLOR_BLACK), (895, 30))
             draw_brutal_box(self.screen, pygame.Rect(860, 60, 120, 90), COLOR_WHITE)
+    def run(self):
+        while True:
+            self.clock.tick(FPS)
+            self.update_timer()
+            self.handle_events()
+            self.render()
+
+if __name__ == "__main__":
+    QuizGame().run()
