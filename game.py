@@ -2,16 +2,15 @@ import sys
 import random
 import pygame
 
-# Initialize Pygame and Mixer
+# Initialize Pygame
 pygame.init()
-pygame.mixer.init()
 
 # --- CONSTANTS & CONFIGURATION ---
 SCREEN_WIDTH = 1000
 SCREEN_HEIGHT = 700
 FPS = 60
 
-# Neo-Brutalist Color Palette (from reference image)
+# Neo-Brutalist Color Palette from the reference picture
 COLOR_BG = (240, 240, 240)
 COLOR_BLACK = (0, 0, 0)
 COLOR_PURPLE = (99, 68, 209)
@@ -20,41 +19,11 @@ COLOR_NEON_YELLOW = (208, 255, 67)
 COLOR_WHITE = (255, 255, 255)
 COLOR_LIGHT_GREY = (220, 220, 220)
 
-# Fonts with robust fallbacks
-FONT_TITLE = pygame.font.SysFont("impact", 50, default=pygame.font.get_default_font())
+# Safe cross-platform fonts
+FONT_TITLE = pygame.font.SysFont("impact", 50)
 FONT_SUBTITLE = pygame.font.SysFont("arial", 20, bold=True)
 FONT_BODY = pygame.font.SysFont("arial", 22, bold=True)
 FONT_SMALL = pygame.font.SysFont("arial", 16, bold=True)
-
-# --- AUDIO HANDLER ---
-sound_click = None
-sound_victory = None
-
-try:
-    # Ensure you place your audio files in the same directory as this script
-    sound_click = pygame.mixer.Sound("click.wav")
-    sound_victory = pygame.mixer.Sound("victory.wav")
-    # For background music:
-    # pygame.mixer.music.load("game_music.mp3")
-except Exception:
-    print("Audio files not loaded yet. Running in silent mode safely.")
-
-def play_music():
-    try:
-        # Pass or play if music file is uncommented above
-        pass
-    except Exception:
-        pass
-
-def stop_music():
-    try:
-        pygame.mixer.music.stop()
-    except Exception:
-        pass
-
-def play_sound(sound_obj):
-    if sound_obj:
-        sound_obj.play()
 
 # --- QUESTION BANK (100 Questions) ---
 QUESTION_POOL = []
@@ -82,10 +51,12 @@ for i in range(1, 101):
 
 # --- UI DRAWING HELPERS ---
 def draw_brutal_box(surface, rect, bg_color, border_thickness=4):
+    """Draws a blocky element with thick black borders."""
     pygame.draw.rect(surface, bg_color, rect)
     pygame.draw.rect(surface, COLOR_BLACK, rect, border_thickness)
 
 def draw_brutal_button(surface, rect, bg_color, text, is_hovered, border_thickness=4):
+    """Draws a button that renders a blocky shadow offset when hovered."""
     if is_hovered:
         shadow_rect = pygame.Rect(rect.x + 6, rect.y + 6, rect.width, rect.height)
         pygame.draw.rect(surface, COLOR_BLACK, shadow_rect)
@@ -95,7 +66,7 @@ def draw_brutal_button(surface, rect, bg_color, text, is_hovered, border_thickne
     text_rect = text_surf.get_rect(center=rect.center)
     surface.blit(text_surf, text_rect)
 
-# --- MAIN GAME STATE SYSTEM ---
+# --- GAME SYSTEM CLASS ---
 class QuizGame:
     def __init__(self):
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -114,6 +85,7 @@ class QuizGame:
         self.last_timer_event = 0
 
     def start_new_game(self):
+        # Dynamically grabs 30 random questions from the pool of 100
         self.selected_questions = random.sample(QUESTION_POOL, 30)
         self.current_question_idx = 0
         self.score = 0
@@ -122,7 +94,6 @@ class QuizGame:
         self.answer_submitted = False
         self.reset_timer()
         self.state = "PLAYING"
-        play_music()
 
     def reset_timer(self):
         self.timer_seconds = 20
@@ -149,10 +120,9 @@ class QuizGame:
         self.answer_submitted = False
         self.reset_timer()
         
+        # 3 Rounds progression logic (10 questions per round)
         if self.current_question_idx >= 30:
             self.state = "VICTORY_SCREEN"
-            stop_music()
-            play_sound(sound_victory)
         elif self.current_question_idx == 20:
             self.current_round = 3
         elif self.current_question_idx == 10:
@@ -168,15 +138,12 @@ class QuizGame:
     def handle_events(self):
         mouse_pos = pygame.mouse.get_pos()
         
-        # FIX: Changed from event.get_events() to event.get()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
                 
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                play_sound(sound_click)
-                
                 if self.state == "MAIN_MENU":
                     if pygame.Rect(350, 400, 300, 70).collidepoint(mouse_pos):
                         self.start_new_game()
@@ -207,11 +174,12 @@ class QuizGame:
         mouse_pos = pygame.mouse.get_pos()
         
         if self.state == "MAIN_MENU":
+            # Main Menu Banner
             draw_brutal_box(self.screen, pygame.Rect(200, 100, 600, 200), COLOR_PURPLE)
             title_text = FONT_TITLE.render("QUIZ GAME", True, COLOR_WHITE)
             self.screen.blit(title_text, title_text.get_rect(center=(500, 200)))
             
-            sub_text = FONT_SUBTITLE.render("100 Questions | 3 Rounds | 30 Challenges", True, COLOR_BLACK)
+            sub_text = FONT_SUBTITLE.render("100 Questions Pool | 3 Rounds | 30 Random Questions", True, COLOR_BLACK)
             self.screen.blit(sub_text, sub_text.get_rect(center=(500, 340)))
             
             btn_rect = pygame.Rect(350, 400, 300, 70)
@@ -221,7 +189,7 @@ class QuizGame:
             current_q = self.selected_questions[self.current_question_idx]
             round_q_num = (self.current_question_idx % 10) + 1
             
-            # Left Sidebar Panel
+            # --- LEFT BANNER SYSTEM ---
             draw_brutal_box(self.screen, pygame.Rect(20, 20, 380, 660), COLOR_NEON_YELLOW)
             title_side = FONT_TITLE.render("QUIZ", True, COLOR_BLACK)
             game_side = FONT_TITLE.render("GAME", True, COLOR_BLACK)
@@ -240,22 +208,22 @@ class QuizGame:
             self.screen.blit(rule_t1, (60, 550))
             self.screen.blit(rule_t2, (60, 580))
 
-            # Main Question Panel
+            # --- CENTER MAIN QUESTION AREA ---
             header_rect = pygame.Rect(420, 20, 420, 50)
             draw_brutal_box(self.screen, header_rect, COLOR_WHITE)
-            q_header_text = FONT_SUBTITLE.render(f"ROUND QUESTION {round_q_num} OF 10", True, COLOR_BLACK)
+            q_header_text = FONT_SUBTITLE.render(f"QUESTION {round_q_num} OF 10", True, COLOR_BLACK)
             self.screen.blit(q_header_text, (440, 32))
             
             q_body_rect = pygame.Rect(420, 85, 420, 130)
             draw_brutal_box(self.screen, q_body_rect, COLOR_WHITE)
             
-                       # Text wrapping logic for the question
+            # Simple text wrap engine
             words = current_q["q"].split(' ')
             lines = []
             current_line = ""
             for word in words:
                 test_line = current_line + word + " "
-                if FONT_BODY.size(test_line)[0] < 380:
+                if FONT_BODY.size(test_line) < 380:
                     current_line = test_line
                 else:
                     lines.append(current_line)
@@ -266,70 +234,6 @@ class QuizGame:
                 q_surf = FONT_BODY.render(line, True, COLOR_BLACK)
                 self.screen.blit(q_surf, (440, 105 + (i * 30)))
 
-            # Answer Choices
+            # Option Cards (A, B, C, D)
             for idx, option in enumerate(current_q["options"]):
-                opt_rect = pygame.Rect(450, 250 + (idx * 75), 400, 55)
-                if not self.answer_submitted:
-                    bg_col = COLOR_PINK if self.selected_option == option else COLOR_WHITE
-                else:
-                    if option == current_q["correct"]:
-                        bg_col = COLOR_NEON_YELLOW
-                    elif self.selected_option == option:
-                        bg_col = COLOR_PINK
-                    else:
-                        bg_col = COLOR_WHITE
-                        
-                draw_brutal_button(self.screen, opt_rect, bg_col, option, opt_rect.collidepoint(mouse_pos) and not self.answer_submitted)
-                
-                prefix_rect = pygame.Rect(420, 250 + (idx * 75), 35, 55)
-                draw_brutal_box(self.screen, prefix_rect, COLOR_BLACK)
-                p_text = FONT_BODY.render(chr(65 + idx), True, COLOR_WHITE)
-                self.screen.blit(p_text, p_text.get_rect(center=prefix_rect.center))
 
-            # Actions Panel
-            action_rect = pygame.Rect(450, 560, 400, 55)
-            if not self.answer_submitted:
-                btn_label = "SUBMIT ANSWER"
-                can_press = self.selected_option is not None
-            else:
-                btn_label = "NEXT CHALLENGE"
-                can_press = True
-            draw_brutal_button(self.screen, action_rect, COLOR_PURPLE if can_press else COLOR_LIGHT_GREY, btn_label, action_rect.collidepoint(mouse_pos) and can_press)
-
-            # Scoreboard / Timer UI
-            score_title_rect = pygame.Rect(860, 20, 120, 40)
-            draw_brutal_box(self.screen, score_title_rect, COLOR_PINK)
-            st_txt = FONT_SMALL.render("SCORE", True, COLOR_BLACK)
-            self.screen.blit(st_txt, st_txt.get_rect(center=score_title_rect.center))
-            
-            score_val_rect = pygame.Rect(860, 60, 120, 90)
-            draw_brutal_box(self.screen, score_val_rect, COLOR_WHITE)
-            sv_txt = FONT_TITLE.render(f"{self.score:02d}", True, COLOR_BLACK)
-            self.screen.blit(sv_txt, sv_txt.get_rect(center=score_val_rect.center))
-
-            timer_title_rect = pygame.Rect(860, 180, 120, 40)
-            draw_brutal_box(self.screen, timer_title_rect, COLOR_PURPLE)
-            tt_txt = FONT_SMALL.render("TIMER", True, COLOR_WHITE)
-            self.screen.blit(tt_txt, tt_txt.get_rect(center=timer_title_rect.center))
-            
-            timer_val_rect = pygame.Rect(860, 220, 120, 90)
-            draw_brutal_box(self.screen, timer_val_rect, COLOR_WHITE)
-            tv_txt = FONT_TITLE.render(f"{self.timer_seconds:02d}", True, COLOR_BLACK)
-            self.screen.blit(tv_txt, tv_txt.get_rect(center=timer_val_rect.center))
-
-        elif self.state == "VICTORY_SCREEN":
-            draw_brutal_box(self.screen, pygame.Rect(200, 100, 600, 300), COLOR_NEON_YELLOW)
-            v_text = FONT_TITLE.render("QUIZ COMPLETED!", True, COLOR_BLACK)
-            self.screen.blit(v_text, v_text.get_rect(center=(500, 180)))
-            
-            final_text = FONT_TITLE.render(f"FINAL SCORE: {self.score} / 30", True, COLOR_PURPLE)
-            self.screen.blit(final_text, final_text.get_rect(center=(500, 280)))
-            
-            again_rect = pygame.Rect(350, 450, 300, 70)
-            draw_brutal_button(self.screen, again_rect, COLOR_PINK, "MAIN MENU", again_rect.collidepoint(mouse_pos))
-
-        pygame.display.flip()
-
-if __name__ == "__main__":
-    game = QuizGame()
-    game.run()
