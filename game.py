@@ -236,4 +236,4 @@ class QuizGame:
 
             # Option Cards (A, B, C, D)
             for idx, option in enumerate(current_q["options"]):
-
+                opt_rect = pygame.Rect(450, 250 + (idx * 75), 400, 55)
